@@ -1,6 +1,7 @@
 package com.drive_cv.backend.service;
 
 import com.drive_cv.backend.domain.Res;
+import com.drive_cv.backend.secret.Secret;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.FileContent;
@@ -25,7 +26,7 @@ public class DriveService {
     private static final Logger LOGGER = LoggerFactory.getLogger(DriveService.class);
     private static final GsonFactory FABRICA_JSON = GsonFactory.getDefaultInstance();
     private static final String RUTA_CREDENCIALES_CUENTA_SERVICIO = obtenerRutaCredenciales();
-    private static final String ID_CARPETA_DESTINO = "1ZgW8Zgtw1iSwCnVfgW-9Axax8yY9L1gl"; // ID de la carpeta de destino en Drive
+    //private static final String ID_CARPETA_DESTINO = "1ZgW8Zgtw1iSwCnVfgW-9Axax8yY9L1gl"; // ID de la carpeta de destino en Drive
 
     /**
      * Obtiene la ruta absoluta al archivo de credenciales de la cuenta de servicio.
@@ -48,7 +49,12 @@ public class DriveService {
      */
     public Res subirArchivoADrive(MultipartFile file) throws IOException, GeneralSecurityException {
         Res respuesta = new Res();
-
+        // Verificar si el archivo está vacío
+        if (file.isEmpty()) {
+            respuesta.setStatus(400);
+            respuesta.setMessage("El archivo está vacío.");
+            return respuesta;
+        }
         // Guardamos el archivo temporalmente en el sistema de archivos
         File archivoTemporal = File.createTempFile("temp", null);
         file.transferTo(archivoTemporal);
@@ -59,7 +65,7 @@ public class DriveService {
             // Crear metadata del archivo
             com.google.api.services.drive.model.File metadatosArchivo = new com.google.api.services.drive.model.File();
             metadatosArchivo.setName(file.getOriginalFilename());
-            metadatosArchivo.setParents(Collections.singletonList(ID_CARPETA_DESTINO));
+            metadatosArchivo.setParents(Collections.singletonList(Secret.getIdCarpetaDestino()));
 
             // Determinar el tipo MIME del archivo
             String tipoMime = obtenerTipoMime(archivoTemporal);
@@ -127,6 +133,7 @@ public class DriveService {
                 GoogleNetHttpTransport.newTrustedTransport(),
                 FABRICA_JSON,
                 credencial)
+                .setApplicationName("DriveCvApp")
                 .build();
     }
 }
